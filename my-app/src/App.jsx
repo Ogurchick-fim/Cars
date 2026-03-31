@@ -6,6 +6,7 @@ import CarsPage from './pages/CarsPage';
 import CarDetailsPage from './pages/CarDetailsPage';
 import ComparePage from './pages/ComparePage';
 import RecommendPage from './pages/RecommendPage';
+import SignUp from './pages/SignUp';
 
 const App = () => (
   <Router>
@@ -16,6 +17,7 @@ const App = () => (
         <Route path="/cars/:id" element={<CarDetailsPage />} />
         <Route path="/compare" element={<ComparePage />} />
         <Route path="/recommend" element={<RecommendPage />} />
+        <Route path="/signup" element={<SignUp />} />
       </Routes>
     </div>
   </Router>

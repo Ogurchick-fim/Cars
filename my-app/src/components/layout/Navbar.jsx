@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Search, Heart, BarChart3, Menu, X } from "lucide-react";
 import { useState } from "react";
+import {SignUp} from "../../pages/SignUp";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -8,6 +9,7 @@ const navLinks = [
   { to: "/compare", label: "Compare" },
   { to: "/recommend", label: "Recommendations" },
   { to: "/dashboard", label: "Dashboard" },
+  
 ];
 
 const Navbar = () => {
@@ -48,7 +50,18 @@ const Navbar = () => {
             <button className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
               <Heart className="w-4 h-4" />
             </button>
-            <button className="btn-accent text-sm py-2">Sign In</button>
+            
+            
+              <Link
+                to="/signup"
+                className="px-4 py-2 rounded-lg text-sm font-medium btn-accent"
+              >
+                
+                Sign Up
+              </Link>
+
+           
+            
           </div>
 
           <button
