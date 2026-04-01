@@ -14,7 +14,7 @@ const CarsPage = () => {
     if (filters.bodyType && car.bodyType !== filters.bodyType) return false;
     if (filters.fuelType && car.fuelType !== filters.fuelType) return false;
     if (filters.transmission && car.transmission !== filters.transmission) return false;
-
+    
     return true;
   });
 
@@ -42,6 +42,7 @@ const CarsPage = () => {
           </div>
         </div>
       </div>
+
       <Footer />
     </div>
   );

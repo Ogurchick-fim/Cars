@@ -20,39 +20,35 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!passwordRules.every((r) => r.test(password))) {
-      toast.error("Please meet all password requirements");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const users = JSON.parse(localStorage.getItem("users")) || [];
+      const res = await fetch("http://localhost:2525/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName,
+          lastName,
+        }),
+      });
 
-      const existingUser = users.find((user) => user.email === email);
+      const data = await res.json();
 
-      if (existingUser) {
-        toast.error("User with this email already exists");
-        setLoading(false);
-        return;
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
       }
 
-      const newUser = {
-        firstName,
-        lastName,
-        email,
-        password,
-      };
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      localStorage.setItem("users", JSON.stringify([...users, newUser]));
-      localStorage.setItem("currentUser", JSON.stringify(newUser));
-
-      toast.success("Account created successfully!");
+      toast.success(data.message);
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Something went wrong");
+      toast.error(error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

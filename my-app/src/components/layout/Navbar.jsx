@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Search, Heart, BarChart3, Menu, X } from "lucide-react";
 import { useState } from "react";
 import {SignUp} from "../../pages/SignUp";
+import { useEffect } from "react";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -13,8 +14,24 @@ const navLinks = [
 ];
 
 const Navbar = () => {
+  
   const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  }, [location]);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  
+  
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+  } 
 
   return (
     <nav className="sticky top-0 z-50 glass-panel border-b border-border/50">
@@ -52,13 +69,39 @@ const Navbar = () => {
             </button>
             
             
-              <Link
-                to="/signup"
-                className="px-4 py-2 rounded-lg text-sm font-medium btn-accent"
-              >
-                
-                Sign Up
-              </Link>
+              {isLoggedIn ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="px-4 py-2 rounded-lg text-sm font-medium btn-accent"
+                    >
+                      Dashboard
+                    </Link>
+
+                    <button
+                      onClick={handleLogout}
+                      className="px-4 py-2 rounded-lg text-sm font-medium border"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="px-4 py-2 rounded-lg text-sm font-medium"
+                    >
+                      Login
+                    </Link>
+
+                    <Link
+                      to="/signup"
+                      className="px-4 py-2 rounded-lg text-sm font-medium btn-accent"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
 
            
             
