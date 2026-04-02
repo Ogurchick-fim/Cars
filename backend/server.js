@@ -9,6 +9,7 @@ const app = express();
 
 const authRoutes = require("./routes/auth");
 const authMiddleware = require("./middleware/authMiddleware");
+const favoriteRoutes = require("./routes/favorites");
 
 app.use(
   cors({
@@ -18,12 +19,11 @@ app.use(
     credentials: true,
   })
 );
-const favoriteRoutes = require("./routes/favorites");
-app.use("/api/favorites", favoriteRoutes);
 
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/favorites", favoriteRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running");
@@ -47,5 +47,3 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection error:", err);
   });
-
-  

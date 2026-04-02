@@ -1,39 +1,44 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const CarCard = ({ car }) => {
   const navigate = useNavigate();
 
+  const [isFavorite, setIsFavorite] = useState(false);
+  
   const handleAddToFavorites = async () => {
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      toast.error("Please log in to save cars");
-      navigate("/login");
-      return;
+  if (!token) {
+    toast.error("Please log in to save cars");
+    navigate("/login");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:2525/api/favorites", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ carId: car.id }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to save car");
     }
 
-    try {
-      const res = await fetch(`http://localhost:2525/api/favorites/${car.id}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to save car");
-      }
-
-      toast.success("Car added to favorites");
-    } catch (error) {
-      toast.error(error.message || "Something went wrong");
-    }
-  };
-
+    toast.success("Car added to favorites");
+    setIsFavorite(true);
+  } catch (error) {
+    toast.error(error.message || "Something went wrong");
+  }
+};
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
       <img
@@ -57,7 +62,7 @@ const CarCard = ({ car }) => {
             onClick={handleAddToFavorites}
             className="p-2 rounded-lg hover:bg-secondary transition-colors"
           >
-            <Heart className="w-5 h-5" />
+            <Heart className={`w-5 h-5 ${isFavorite ? "text-red-500" : ""}`} />
           </button>
         </div>
 

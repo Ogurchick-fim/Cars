@@ -11,45 +11,45 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    // fake delay to make it feel like real login
-    setTimeout(async () => {
-      // simple fake auth without database
-      try{
-        const res = await fetch("http://localhost:2525/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      
+  try {
+    const res = await fetch("http://localhost:2525/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-      
+    const data = await res.json();
+    console.log("LOGIN STATUS:", res.status);
+    console.log("LOGIN DATA:", data);
 
-      if (!res.ok) {
-        toast.error(data.message || "Login failed");
-      }
+    if (!res.ok) {
+      throw new Error(data.message || "Login failed");
+    }
 
-        toast.success("Welcome back!");
-        localStorage.setItem("token", data.token);
-        navigate("/dashboard");
+    if (!data.token || !data.user) {
+      throw new Error("Invalid response from server");
+    }
 
-       
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-      setLoading(false);
-      } catch (error) {
-        console.error("Login error:", error);
-        toast.error("An error occurred during login");
-        setLoading(false);
-      } finally {
-        setLoading(false);
-      }
-    }, 800);
-  };
+    console.log("SAVED TOKEN:", localStorage.getItem("token"));
+    console.log("SAVED USER:", localStorage.getItem("user"));
+
+    toast.success(data.message || "Welcome back!");
+    navigate("/dashboard");
+  } catch (error) {
+    console.error("Login error:", error);
+    toast.error(error.message || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-background flex">

@@ -9,6 +9,8 @@ const passwordRules = [
   { label: "One number", test: (p) => /\d/.test(p) },
 ];
 
+
+
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
@@ -37,13 +39,16 @@ const Signup = () => {
       });
 
       const data = await res.json();
-
+      
       if (!res.ok) {
         throw new Error(data.message || "Login failed");
       }
-
+      console.log("USER BEFORE SAVE:", data.user);
+      console.log("TOKEN BEFORE SAVE:", data.token);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      console.log("SIGNUP STATUS:", res.status);
+      console.log("SIGNUP DATA:", data);
 
       toast.success(data.message);
       navigate("/dashboard");
@@ -53,6 +58,8 @@ const Signup = () => {
       setLoading(false);
     }
   };
+
+  
 
   return (
     <div className="min-h-screen bg-background flex">

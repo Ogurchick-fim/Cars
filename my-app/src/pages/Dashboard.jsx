@@ -1,5 +1,3 @@
-
-
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, BarChart3, Clock, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -18,57 +16,66 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const savedUser = localStorage.getItem("user");
-  const user = savedUser ? JSON.parse(savedUser) : null;
+  let user = null;
+
+  try {
+    user = savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
+  } catch (error) {
+    console.error("Invalid user data in localStorage:", error);
+    localStorage.removeItem("user");
+    user = null;
+  }
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  if (!token) {
+    navigate("/login");
+    return;
+  }
 
-    const fetchFavorites = async () => {
-      try {
-        const res = await fetch("http://localhost:2525/api/favorites", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  const fetchFavorites = async () => {
+    try {
+      const res = await fetch("http://localhost:2525/api/favorites", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to load favorites");
-        }
-
-        setFavorites(data.favorites || []);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to load favorites");
       }
-    };
 
-    fetchFavorites();
-  }, [token, navigate]);
+      setFavorites(data.favorites || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchFavorites();
+}, [token, navigate]);
 
   const savedCars = useMemo(() => {
     return cars.filter((car) => favorites.includes(car.id));
   }, [favorites]);
 
-  const initials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : (user?.email?.[0] ?? "U").toUpperCase();
+  const initials =
+    user?.firstName && user?.lastName
+      ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+      : (user?.email?.[0] ?? "U").toUpperCase();
 
-  const displayName = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.email || "User";
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user?.lastName ?? ""}`.trim()
+    : "User";
 
   const removeFavorite = async (carId) => {
     try {
       const res = await fetch(`http://localhost:2525/api/favorites/${carId}`, {
-        method: "GET",   
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -85,13 +92,14 @@ const Dashboard = () => {
       console.error(error);
     }
   };
-
+  console.log("cars:", cars);
+    console.log("favorites:", favorites);
+    console.log("savedCars:", savedCars);
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="container-auto py-10">
-        {/* Profile header */}
         <div className="card-automotive p-8 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-accent-foreground font-display text-xl font-bold">
             {initials}
@@ -104,7 +112,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid sm:grid-cols-3 gap-4 mb-10">
           {[
             { icon: Heart, label: "Saved Cars", value: savedCars.length, color: "text-destructive" },
@@ -125,7 +132,6 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Saved Cars */}
         <div className="mb-10">
           <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
             <Heart className="w-5 h-5 text-destructive" /> Saved Cars
@@ -183,7 +189,6 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Saved Comparisons */}
         <div className="mb-10">
           <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-accent" /> Saved Comparisons
@@ -222,7 +227,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Recommendations */}
         <div>
           <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-highlight" /> Recommendation History
