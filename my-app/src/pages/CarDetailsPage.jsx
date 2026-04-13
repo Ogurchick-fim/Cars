@@ -13,6 +13,8 @@ import { useState } from "react";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { cars } from "../data/cars.ts";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 const tabs = ["Specifications", "Features", "Ownership Cost", "Dealer Info"];
 
@@ -20,7 +22,70 @@ const CarDetailsPage = () => {
   const { id } = useParams();
   const car = cars.find((c) => c.id === id);
   const [activeTab, setActiveTab] = useState("Specifications");
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const token = localStorage.getItem("token");
 
+    const isFavorite = favoriteIds.includes(String(car.id));
+    const handleToggleFavorite = async () => {
+  if (!token) {
+    toast.error("Please log in");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      isFavorite
+        ? `http://localhost:2525/api/favorites/${car.id}`
+        : "http://localhost:2525/api/favorites",
+      {
+        method: isFavorite ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        ...(isFavorite
+          ? {}
+          : { body: JSON.stringify({ carId: car.id }) }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message);
+
+    setFavoriteIds(data.favorites);
+
+    toast.success(
+      isFavorite ? "Removed from favorites" : "Added to favorites"
+    );
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
+
+ useEffect(() => {
+  const fetchFavorites = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch("http://localhost:2525/api/favorites", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setFavoriteIds(data.favorites || []);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchFavorites();
+}, [token]);
   if (!car) {
     return (
       <div className="min-h-screen bg-background">
@@ -246,9 +311,16 @@ const CarDetailsPage = () => {
                   <BarChart3 className="w-4 h-4 inline mr-1.5" />
                   Compare
                 </button>
-                <button className="btn-outline-auto px-4">
-                  <Heart className="w-4 h-4" />
-                </button>
+                <button
+                    onClick={handleToggleFavorite}
+                    className="btn-outline-auto px-4"
+                  >
+                    <Heart
+                      className={`w-4 h-4 ${
+                        isFavorite ? "text-red-500 fill-red-500" : ""
+                      }`}
+                    />
+                  </button>
               </div>
             </div>
 

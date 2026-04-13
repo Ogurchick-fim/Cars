@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import HomePage from "./pages/HomePage";
 import CarsPage from "./pages/CarsPage";
 import CarDetailsPage from "./pages/CarDetailsPage";
@@ -11,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => (
+  <>
+  <Toaster position="top-right" richColors />
   <Router>
     <div className="App">
       <Routes>
@@ -34,6 +37,7 @@ const App = () => (
       </Routes>
     </div>
   </Router>
+  </>
 );
 
 export default App;

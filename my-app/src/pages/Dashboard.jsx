@@ -4,17 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { cars } from "../data/cars.ts";
+import { toast } from "sonner";
 
-const savedComparisons = [
-  { id: "1", cars: [cars[0], cars[2]], date: "Mar 5, 2026" },
-  { id: "2", cars: [cars[1], cars[3], cars[4]], date: "Mar 3, 2026" },
-];
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [savedComparisons, setSavedComparisons] = useState([]);
   const savedUser = localStorage.getItem("user");
   let user = null;
 
@@ -28,6 +26,8 @@ const Dashboard = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
+  const token = localStorage.getItem("token");
+
   if (!token) {
     navigate("/login");
     return;
@@ -51,18 +51,73 @@ const Dashboard = () => {
       setFavorites(data.favorites || []);
     } catch (error) {
       console.error(error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      navigate("/login");
     } finally {
       setLoading(false);
+    }
+    
+  };
+
+  const fetchComparisons = async () => {
+    try {
+      const res = await fetch("http://localhost:2525/api/comparisons", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to load comparisons");
+      }
+
+      setSavedComparisons(data.savedComparisons || []);
+    } catch (error) {
+      console.error(error);
     }
   };
 
   fetchFavorites();
-}, [token, navigate]);
+  fetchComparisons();
+}, [navigate]);
+
+const removeComparison = async (index) => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`http://localhost:2525/api/comparisons/${index}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to remove comparison");
+    }
+
+    setSavedComparisons(data.savedComparisons || []);
+    toast.success("Comparison removed");
+  } catch (error) {
+    toast.error(error.message || "Something went wrong");
+  }
+};
 
   const savedCars = useMemo(() => {
     return cars.filter((car) => favorites.includes(car.id));
   }, [favorites]);
 
+  const comparisonGroups = (savedComparisons || []).map((group, index) => ({
+  id: String(index),
+  cars: cars.filter((car) =>
+    Array.isArray(group) && group.includes(String(car.id))
+  ),
+}));
   const initials =
     user?.firstName && user?.lastName
       ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
@@ -73,133 +128,73 @@ const Dashboard = () => {
     : "User";
 
   const removeFavorite = async (carId) => {
-    try {
-      const res = await fetch(`http://localhost:2525/api/favorites/${carId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  try {
+    const res = await fetch(`http://localhost:2525/api/favorites/${carId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to remove favorite");
-      }
-
-      setFavorites(data.favorites || []);
-    } catch (error) {
-      console.error(error);
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to remove favorite");
     }
-  };
+
+    setFavorites(data.favorites || []);
+    toast.success("Car removed from favorites");
+  } catch (error) {
+    console.error(error);
+    toast.error(error.message || "Something went wrong");
+  }
+};
   console.log("cars:", cars);
     console.log("favorites:", favorites);
     console.log("savedCars:", savedCars);
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+  <div className="min-h-screen bg-background">
+    <Navbar />
 
-      <div className="container-auto py-10">
-        <div className="card-automotive p-8 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-accent-foreground font-display text-xl font-bold">
-            {initials}
+    <div className="container-auto py-10">
+      {/* PROFILE */}
+      <div className="card-automotive p-8 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+        <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-accent-foreground font-display text-xl font-bold">
+          {initials}
+        </div>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            {displayName}
+          </h1>
+          <p className="text-sm text-muted-foreground">{user?.email}</p>
+        </div>
+      </div>
+
+      {/* SAVED COMPARISONS */}
+      <div className="mb-10">
+        <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-accent" /> Saved Comparisons
+        </h2>
+
+        {comparisonGroups.length === 0 ? (
+          <div className="card-automotive p-8 text-center">
+            <p className="text-muted-foreground mb-4">
+              No saved comparisons yet
+            </p>
+            <Link to="/compare" className="btn-accent text-sm inline-block">
+              Compare Cars
+            </Link>
           </div>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              {displayName}
-            </h1>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-          </div>
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-4 mb-10">
-          {[
-            { icon: Heart, label: "Saved Cars", value: savedCars.length, color: "text-destructive" },
-            { icon: BarChart3, label: "Comparisons", value: savedComparisons.length, color: "text-accent" },
-            { icon: Sparkles, label: "Recommendations", value: 3, color: "text-highlight" },
-          ].map((stat) => (
-            <div key={stat.label} className="card-automotive p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-              <div>
-                <p className="font-display text-2xl font-bold text-foreground">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mb-10">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <Heart className="w-5 h-5 text-destructive" /> Saved Cars
-          </h2>
-
-          {loading ? (
-            <div className="card-automotive p-8 text-center text-muted-foreground">
-              Loading saved cars...
-            </div>
-          ) : savedCars.length === 0 ? (
-            <div className="card-automotive p-8 text-center">
-              <p className="text-muted-foreground mb-4">You have no saved cars yet</p>
-              <Link to="/cars" className="btn-accent text-sm inline-block">
-                Browse Cars
-              </Link>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {savedCars.map((car) => (
-                <div key={car.id} className="card-automotive p-4 flex items-center gap-4">
-                  <img
-                    src={car.image}
-                    alt={car.model}
-                    className="w-20 h-14 object-cover rounded-lg bg-secondary"
-                  />
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">{car.brand}</p>
-                    <p className="font-display font-semibold text-sm text-foreground truncate">
-                      {car.model}
-                    </p>
-                    <p className="text-sm font-medium text-accent">
-                      ${car.price.toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-1">
-                    <Link
-                      to={`/cars/${car.id}`}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-accent hover:bg-secondary transition-colors text-xs"
-                    >
-                      View
-                    </Link>
-
-                    <button
-                      onClick={() => removeFavorite(car.id)}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="mb-10">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-accent" /> Saved Comparisons
-          </h2>
-
+        ) : (
           <div className="space-y-3">
-            {savedComparisons.map((comp) => (
-              <div key={comp.id} className="card-automotive p-4 flex items-center justify-between">
+            {comparisonGroups.map((comp, index) => (
+              <div
+                key={comp.id}
+                className="card-automotive p-4 flex items-center justify-between"
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-3">
-                    {comp.cars.map((c) => (
+                    {(comp.cars || []).map((c) => (
                       <img
                         key={c.id}
                         src={c.image}
@@ -211,41 +206,130 @@ const Dashboard = () => {
 
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      {comp.cars.map((c) => `${c.brand} ${c.model}`).join(" vs ")}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {comp.date}
+                      {(comp.cars || [])
+                        .map((c) => `${c.brand} ${c.model}`)
+                        .join(" vs ")}
                     </p>
                   </div>
                 </div>
 
-                <Link to="/compare" className="text-sm font-medium text-accent hover:underline">
-                  View
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link
+                    to="/compare"
+                    onClick={() =>
+                      localStorage.setItem(
+                        "compareCars",
+                        JSON.stringify(
+                          (comp.cars || []).map((c) => String(c.id))
+                        )
+                      )
+                    }
+                    className="text-sm font-medium text-accent hover:underline"
+                  >
+                    View
+                  </Link>
+
+                  <button
+                    onClick={() => removeComparison(index)}
+                    className="text-sm font-medium text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
           </div>
-        </div>
-
-        <div>
-          <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-highlight" /> Recommendation History
-          </h2>
-
-          <div className="card-automotive p-8 text-center">
-            <p className="text-muted-foreground mb-4">
-              Your recommendation results will appear here
-            </p>
-            <Link to="/recommend" className="btn-accent text-sm inline-block">
-              Get Recommendations
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
 
-      <Footer />
+      {/* SAVED CARS */}
+      <div className="mb-10">
+        <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+          <Heart className="w-5 h-5 text-destructive" /> Saved Cars
+        </h2>
+
+        {loading ? (
+          <div className="card-automotive p-8 text-center text-muted-foreground">
+            Loading saved cars...
+          </div>
+        ) : savedCars.length === 0 ? (
+          <div className="card-automotive p-8 text-center">
+            <p className="text-muted-foreground mb-4">
+              You have no saved cars yet
+            </p>
+            <Link to="/cars" className="btn-accent text-sm inline-block">
+              Browse Cars
+            </Link>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {savedCars.map((car) => (
+              <div
+                key={car.id}
+                className="card-automotive p-4 flex items-center gap-4"
+              >
+                <img
+                  src={car.image}
+                  alt={car.model}
+                  className="w-20 h-14 object-cover rounded-lg bg-secondary"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    {car.brand}
+                  </p>
+                  <p className="font-display font-semibold text-sm text-foreground truncate">
+                    {car.model}
+                  </p>
+                  <p className="text-sm font-medium text-accent">
+                    ${car.price.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="flex gap-1">
+                  <Link
+                    to={`/cars/${car.id}`}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-accent hover:bg-secondary transition-colors text-xs"
+                  >
+                    View
+                  </Link>
+
+                  <button
+                    onClick={() => removeFavorite(car.id)}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* RECOMMENDATIONS */}
+      <div>
+        <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-highlight" /> Recommendation History
+        </h2>
+
+        <div className="card-automotive p-8 text-center">
+          <p className="text-muted-foreground mb-4">
+            Your recommendation results will appear here
+          </p>
+          <Link
+            to="/recommend"
+            className="btn-accent text-sm inline-block"
+          >
+            Get Recommendations
+          </Link>
+        </div>
+      </div>
     </div>
-  );
+
+    <Footer />
+  </div>
+);
 };
 
 export default Dashboard;

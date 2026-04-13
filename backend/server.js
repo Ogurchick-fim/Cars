@@ -35,7 +35,8 @@ app.get("/api/dashboard", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
-
+const comparisonRoutes = require("./routes/comparisons");
+app.use("/api/comparisons", comparisonRoutes);
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {

@@ -26,8 +26,12 @@ const userSchema = new mongoose.Schema(
     favorites: {
   type: [String],
   default: [],
-
-} 
+      
+    } ,
+  savedComparisons: {
+  type: [[String]],
+  default: [],
+    },
   },
   { timestamps: true }
 );

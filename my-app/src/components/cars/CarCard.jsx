@@ -1,44 +1,84 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const CarCard = ({ car }) => {
   const navigate = useNavigate();
-
-  const [isFavorite, setIsFavorite] = useState(false);
-  
-  const handleAddToFavorites = async () => {
+  const [favoriteIds, setFavoriteIds] = useState([]);
   const token = localStorage.getItem("token");
 
-  if (!token) {
-    toast.error("Please log in to save cars");
-    navigate("/login");
-    return;
-  }
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!token) return;
 
-  try {
-    const res = await fetch("http://localhost:2525/api/favorites", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ carId: car.id }),
-    });
+      try {
+        const res = await fetch("http://localhost:2525/api/favorites", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to save car");
+        if (res.ok) {
+          setFavoriteIds(data.favorites || []);
+        }
+      } catch (error) {
+        console.error("Failed to load favorites:", error);
+      }
+    };
+
+    fetchFavorites();
+  }, [token]);
+
+  const isFavorite = favoriteIds.includes(String(car.id));
+
+  const handleToggleFavorite = async () => {
+    if (!token) {
+      toast.error("Please log in to save cars");
+      navigate("/login");
+      return;
     }
 
-    toast.success("Car added to favorites");
-    setIsFavorite(true);
-  } catch (error) {
-    toast.error(error.message || "Something went wrong");
-  }
-};
+    try {
+      const url = isFavorite
+        ? `http://localhost:2525/api/favorites/${car.id}`
+        : "http://localhost:2525/api/favorites";
+
+      const options = isFavorite
+        ? {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        : {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ carId: car.id }),
+          };
+
+      const res = await fetch(url, options);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update favorites");
+      }
+
+      setFavoriteIds(data.favorites || []);
+
+      toast.success(
+        isFavorite ? "Car removed from favorites" : "Car added to favorites"
+      );
+    } catch (error) {
+      toast.error(error.message || "Something went wrong");
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
       <img
@@ -59,11 +99,16 @@ const CarCard = ({ car }) => {
           </div>
 
           <button
-            onClick={handleAddToFavorites}
+            onClick={handleToggleFavorite}
             className="p-2 rounded-lg hover:bg-secondary transition-colors"
           >
-            <Heart className={`w-5 h-5 ${isFavorite ? "text-red-500" : ""}`} />
+            <Heart
+              className={`w-5 h-5 ${
+                isFavorite ? "text-red-500 fill-red-500" : ""
+              }`}
+            />
           </button>
+          
         </div>
 
         <p className="mt-3 text-xl font-bold text-foreground">
