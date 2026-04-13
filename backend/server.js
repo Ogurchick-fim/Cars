@@ -10,6 +10,9 @@ const app = express();
 const authRoutes = require("./routes/auth");
 const authMiddleware = require("./middleware/authMiddleware");
 const favoriteRoutes = require("./routes/favorites");
+const recommendAiRoutes = require("./routes/compareAi");
+const compareAiRoutes = require("./routes/compareAi");
+const comparisonRoutes = require("./routes/comparisons");
 
 app.use(
   cors({
@@ -24,6 +27,9 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/favorites", favoriteRoutes);
+app.use("/api/recommend-ai", recommendAiRoutes);
+app.use("/api/compare-ai", compareAiRoutes);
+app.use("/api/comparisons", comparisonRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running");
@@ -35,8 +41,7 @@ app.get("/api/dashboard", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
-const comparisonRoutes = require("./routes/comparisons");
-app.use("/api/comparisons", comparisonRoutes);
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
