@@ -3,13 +3,58 @@ import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { cars } from "../data/cars.ts";
 import ComparisonTable from "../components/compare/CompareTable.jsx";
-import { Plus, X, Save } from "lucide-react";
+import { Plus, X, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+
 const ComparePage = () => {
+  
   const [selected, setSelected] = useState([]);
   const token = localStorage.getItem("token");
+  
+const [aiResult, setAiResult] = useState(null);
+const [aiLoading, setAiLoading] = useState(false);
 
+  const handleAskAi = async () => {
+    if (!token) {
+      toast.error("Please log in to use AI compare");
+      return;
+    }
+
+    if (selectedCars.length < 2) {
+      toast.error("Select at least 2 cars for AI comparison");
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      setAiResult(null);
+
+      const res = await fetch("http://localhost:2525/api/compare-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ cars: selectedCars }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to get AI comparison");
+      }
+
+      setAiResult(data);
+      toast.success("AI comparison ready");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "Something went wrong");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+  
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("compareCars")) || [];
     setSelected(saved);
@@ -86,6 +131,8 @@ console.log("COMPARE RESPONSE:", data);
     localStorage.removeItem("compareCars");
   };
 
+  
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -152,7 +199,54 @@ console.log("COMPARE RESPONSE:", data);
               Save Comparison
             </button>
           )}
+
+          {selected.length >= 2 && (
+            <button
+              onClick={handleAskAi}
+              disabled={aiLoading}
+              className="px-4 py-2 rounded-full border border-border text-sm text-foreground hover:bg-secondary transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4" />
+              {aiLoading ? "Thinking..." : "Ask AI"}
+            </button>
+          )}
         </div>
+
+        {aiResult && (
+          <div className="card-automotive p-6 mb-6">
+            <h2 className="font-display text-xl font-bold text-foreground mb-3">
+              AI Comparison Summary
+            </h2>
+
+            <p className="text-sm text-muted-foreground mb-4">
+              {aiResult.summary}
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">
+                  Best choice
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {aiResult.bestCarName || "No best car selected"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">
+                  Why?
+                </p>
+                <ul className="space-y-1">
+                  {(aiResult.why || []).map((reason) => (
+                    <li key={reason} className="text-sm text-muted-foreground">
+                      • {reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {selectedCars.length >= 2 ? (
           <div className="card-automotive overflow-hidden">

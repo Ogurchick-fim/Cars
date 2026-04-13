@@ -44,17 +44,76 @@ const RecommendPage = () => {
         Number(form.years)
       );
 
-      const score = calculateScore({
+      let score = calculateScore({
         price: car.price,
         fuelEfficiency,
         reliability: car.reliabilityScore / 10,
         budget: Number(form.budget) || car.price,
       });
 
+      const reasons = [];
+      const badges = [];
+
+      if (form.budget && car.price <= Number(form.budget)) {
+        reasons.push("Fits your budget");
+        badges.push({
+          label: "Budget Friendly",
+          color: "bg-green-100 text-green-700",
+        });
+        score += 1;
+      }
+
+      if (car.reliabilityScore >= 88) {
+        reasons.push("High reliability score");
+        badges.push({
+          label: "Reliable",
+          color: "bg-blue-100 text-blue-700",
+        });
+        score += 1;
+      }
+
+      if (fuelEfficiency >= 50 || car.fuelType === "Electric") {
+        reasons.push("Low running costs");
+        badges.push({
+          label: "Efficient",
+          color: "bg-emerald-100 text-emerald-700",
+        });
+        score += 1;
+      }
+
+      if (car.horsepower >= 300) {
+        reasons.push("Strong performance");
+        badges.push({
+          label: "Powerful",
+          color: "bg-red-100 text-red-700",
+        });
+        score += 0.5;
+      }
+
+      if (form.bodyType && car.bodyType === form.bodyType) {
+        reasons.push(`Matches your preferred ${car.bodyType.toLowerCase()} style`);
+        badges.push({
+          label: car.bodyType,
+          color: "bg-purple-100 text-purple-700",
+        });
+        score += 0.5;
+      }
+
+      if (form.fuelType && car.fuelType === form.fuelType) {
+        reasons.push(
+          `Matches your preferred ${car.fuelType.toLowerCase()} powertrain`
+        );
+        score += 0.5;
+      }
+
       return {
         ...car,
         recommendationScore: Number(score.toFixed(2)),
         totalOwnershipCost: Math.round(totalCost),
+        whyThisCar: reasons.length
+          ? reasons.slice(0, 3)
+          : ["Strong overall balance of cost, efficiency, and reliability"],
+        badges: badges.slice(0, 3),
       };
     });
 
@@ -165,13 +224,31 @@ const RecommendPage = () => {
                 </p>
               </div>
             ) : (
-              <>
-                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {topCars.map((car) => (
-                    <div key={car.id} className="space-y-3">
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {topCars.map((car, index) => (
+                  <div key={car.id} className="space-y-3">
+                    <div className="relative">
+                      {index === 0 && (
+                        <span className="absolute top-3 left-3 z-10 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold shadow-sm">
+                          Top Pick
+                        </span>
+                      )}
                       <CarCard car={car} />
+                    </div>
 
-                      <div className="card-automotive p-4 text-sm space-y-2">
+                    <div className="card-automotive p-4 text-sm space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {car.badges?.map((badge) => (
+                          <span
+                            key={badge.label}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${badge.color}`}
+                          >
+                            {badge.label}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
                             Recommendation score
@@ -190,10 +267,26 @@ const RecommendPage = () => {
                           </span>
                         </div>
                       </div>
+
+                      <div className="pt-2 border-t border-border">
+                        <p className="text-sm font-semibold text-foreground mb-2">
+                          Why this car?
+                        </p>
+                        <ul className="space-y-1">
+                          {car.whyThisCar?.map((reason) => (
+                            <li
+                              key={reason}
+                              className="text-sm text-muted-foreground"
+                            >
+                              • {reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
